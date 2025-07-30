@@ -4,15 +4,11 @@ namespace App\Filament\User\Pages;
 
 use App\Models\Requests;
 use Filament\Pages\Page;
-use Illuminate\Support\Carbon;
 use App\Models\Shift;
-use App\Models\Request;
-use Illuminate\Support\Facades\Auth;
 
 class WeeklyAgenda extends Page
 {
     protected static ?string $title = 'Mijn werkdagen';
-
     protected static ?string $navigationIcon = 'heroicon-o-calendar';
     protected static ?string $navigationLabel = 'Mijn werkdagen';
     protected static string $view = 'filament.pages.weekly-agenda';
@@ -24,16 +20,21 @@ class WeeklyAgenda extends Page
         \Carbon\Carbon::setLocale('nl');
 
         $user = \Filament\Facades\Filament::auth()->user();
-        $startOfWeek = now()->startOfWeek();
-        $endOfWeek = now()->endOfWeek();
 
-        // All shifts of the user this week
+        // ✅ Get week offset from query and cast safely
+        $weekOffsetRaw = request()->query('week', '0');
+        $weekOffset = is_numeric($weekOffsetRaw) ? (int) $weekOffsetRaw : 0;
+
+        $startOfWeek = \Carbon\Carbon::now()->startOfWeek()->addWeeks($weekOffset);
+        $endOfWeek = \Carbon\Carbon::now()->endOfWeek()->addWeeks($weekOffset);
+
+        // Get all shifts for user within the week
         $shifts = Shift::where('user_id', $user->id)
             ->whereBetween('start_time', [$startOfWeek, $endOfWeek])
             ->orderBy('start_time')
             ->get();
 
-        // Approved requests with no shift_id = day off
+        // Approved requests with no shift = day off
         $dayOffRequests = Requests::where('user_id', $user->id)
             ->where('status', 'approved')
             ->whereNull('shift_id')
@@ -41,7 +42,7 @@ class WeeklyAgenda extends Page
             ->pluck('requested_date')
             ->map(fn($date) => \Carbon\Carbon::parse($date)->toDateString());
 
-        // ✅ Approved sick days (regardless of shift)
+        // Approved sick days
         $sickDays = Requests::where('user_id', $user->id)
             ->where('status', 'approved')
             ->where('type', 'ziek')
@@ -71,6 +72,4 @@ class WeeklyAgenda extends Page
 
         $this->agenda = $agenda;
     }
-
-
 }

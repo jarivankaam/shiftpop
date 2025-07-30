@@ -22,22 +22,33 @@ class ShiftsResource extends Resource
 
     public static function form(Form|Forms\Form $form): Forms\Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Select::make('user_id')
-                    ->label('User')
-                    ->relationship('user', 'name')
-                    ->searchable()
-                    ->required(),
+       return $form
+        ->schema([
+            Forms\Components\Select::make('user_id')
+                ->label('User')
+                ->relationship('user', 'name')
+                ->searchable()
+                ->required(),
 
-                Forms\Components\DateTimePicker::make('start_time')
-                    ->label('Start Time')
-                    ->required(),
+            Forms\Components\DateTimePicker::make('start_time')
+                ->label('Start Time')
+                ->required(),
 
-                Forms\Components\DateTimePicker::make('end_time')
-                    ->label('End Time')
-                    ->required(),
-            ]);
+            Forms\Components\DateTimePicker::make('end_time')
+                ->label('End Time')
+                ->required(),
+
+            Forms\Components\Checkbox::make('is_recurring')
+                ->label('Repeat Weekly')
+                ->reactive(),
+
+            Forms\Components\TextInput::make('recurring_weeks')
+                ->label('How many weeks?')
+                ->numeric()
+                ->minValue(1)
+                ->maxValue(52)
+                ->visible(fn (callable $get) => $get('is_recurring')),
+        ]);
     }
 
     public static function table(Table|Tables\Table $table): Tables\Table
