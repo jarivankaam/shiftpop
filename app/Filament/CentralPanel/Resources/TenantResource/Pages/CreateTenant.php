@@ -32,7 +32,7 @@ protected function mutateFormDataBeforeCreate(array $data): array
         // dd($tenant->tenant_id);
         $tenant->domains()->create([
             'domain' => "{$tenant->slug}.shiftpop.eu", // ✅ Replace "shi" with full domain
-            'tenant_id' => "$tenant->tenant_id",
+            'tenant_id' => "$tenant->id",
         ]);
 
         // Run tenant migrations
