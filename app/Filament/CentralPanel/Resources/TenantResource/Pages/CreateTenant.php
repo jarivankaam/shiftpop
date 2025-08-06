@@ -17,7 +17,7 @@ class CreateTenant extends CreateRecord
         $tenant = $this->record; // ✅ This is the tenant that was just created
 
 
-        dd($tenant.data);
+        dd($tenant);
         // Create domain (use real domain!)
         $tenant->domains()->create([
             'domain' => "{$tenant->id}.shiftpop.eu", // ✅ Replace "shi" with full domain
