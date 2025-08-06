@@ -14,8 +14,9 @@ class CreateTenant extends CreateRecord
        protected function afterCreate(): void
     {
        /** @var Tenant $tenant */
-        $tenant = $this->data; // ✅ This is the tenant that was just created
+        $tenant = $this->record; // ✅ This is the tenant that was just created
 
+        dd($tenant);
         // Create domain (use real domain!)
         $tenant->domains()->create([
             'domain' => "{$tenant->id}.shiftpop.eu", // ✅ Replace "shi" with full domain
@@ -25,5 +26,5 @@ class CreateTenant extends CreateRecord
         $tenant->run(function () {
             Artisan::call('tenants:migrate', ['--force' => true]);
         });
-    }
+
 }
