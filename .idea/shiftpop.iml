@@ -163,6 +163,10 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/vlucas/phpdotenv" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/voku/portable-ascii" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/webmozart/assert" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/facade/ignition-contracts" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/stancl/jobpipeline" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/stancl/tenancy" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/stancl/virtualcolumn" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

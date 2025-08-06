@@ -2,7 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Central app routes (e.g. /login, /register, /dev panel)
 Route::redirect('/', '/user/login');
+
+// Or move dev panel config here if not tenant-aware
+
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
