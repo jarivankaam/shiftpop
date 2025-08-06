@@ -26,5 +26,6 @@ class CreateTenant extends CreateRecord
         $tenant->run(function () {
             Artisan::call('tenants:migrate', ['--force' => true]);
         });
+    }
 
 }
