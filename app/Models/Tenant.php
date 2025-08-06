@@ -8,7 +8,7 @@ class Tenant extends BaseTenant
 {
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['slug'];
+    protected $fillable = ['id','slug'];
 
       public function domains()
     {
