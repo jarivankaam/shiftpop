@@ -35,10 +35,6 @@ protected function mutateFormDataBeforeCreate(array $data): array
             'tenant_id' => "$tenant->id",
         ]);
 
-        // Run tenant migrations
-        $tenant->run(function () {
-            Artisan::call('tenants:migrate', ['--force' => true]);
-        });
     }
 
 }
