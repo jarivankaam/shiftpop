@@ -17,11 +17,11 @@ class CreateTenant extends CreateRecord
 
         // ✅ Now it's safe to attach a domain
       $tenant = Tenant::create([
-    'id' => 'spot', // or use UUIDs
+    'id' => $tenant->id, // or use UUIDs
 ]);
 
 $tenant->domains()->create([
-    'domain' => 'spot.shiftpop.test',
+    'domain' => "{$tenant->id}.shi",
 ]);
 
         // Optionally run tenant migrations
