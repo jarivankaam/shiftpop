@@ -1,0 +1,41 @@
+name: shiftpop
+recipe: laravel
+
+config:
+  php: '8.3'
+  webroot: public
+  xdebug: false
+
+proxy:
+  appserver:
+    - shiftpop.test
+    - "*.shiftpop.test"
+
+services:
+  database:
+    type: mariadb:10.6
+    portforward: 3310
+    run_as_root:
+      - mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'laravel'@'%';"
+
+  redis:
+    type: redis
+
+  reverb:
+    type: php:8.3
+    via: cli
+    command: php artisan reverb:start
+    portforward: true
+    overrides:
+      ports:
+        - 9201:9201
+
+tooling:
+  artisan:
+    service: appserver
+  composer:
+    service: appserver
+  npm:
+    service: appserver
+  php:
+    service: appserver
