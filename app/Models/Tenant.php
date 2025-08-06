@@ -4,10 +4,17 @@ namespace App\Models;
 
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
-class Tenant extends BaseTenant
+class Tenant extends Model
 {
-    public function domains()
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected static function booted(): void
     {
-        return $this->hasMany(\Stancl\Tenancy\Database\Models\Domain::class);
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
+        });
     }
 }
