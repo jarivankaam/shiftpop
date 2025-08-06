@@ -17,11 +17,14 @@ class CreateTenant extends CreateRecord
 protected function mutateFormDataBeforeCreate(array $data): array
 {
     $data['id'] = (string) Str::uuid(); // 👈 Generate UUID before creation
+     dd($data);
     return $data;
 }
 
+
        protected function afterCreate(): void
     {
+        dd($data);
        /** @var Tenant $tenant */
         $tenant = $this->record; // ✅ This is the tenant that was just created
         // Create domain (use real domain!)
