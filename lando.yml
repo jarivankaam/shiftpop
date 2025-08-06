@@ -1,0 +1,29 @@
+name: laravel-app
+recipe: laravel
+config:
+  webroot: public
+  php: '8.2'
+  composer_version: 2.7
+  database: mysql
+
+services:
+  appserver:
+    type: php
+    via: nginx
+    portforward: true
+
+  mysql:
+    type: mysql:8.0
+    portforward: true
+    creds:
+      user: laravel
+      password: laravel
+      database: laravel
+
+tooling:
+  artisan:
+    service: appserver
+  composer:
+    service: appserver
+  mysql:
+    service: mysql
