@@ -30,7 +30,7 @@ protected static ?string $pluralLabel = 'Tenants';
             ->label('Tenant slug')
             ->rules(['not_in:0', 'alpha_dash', 'min:3']),
 
-        Forms\Components\Hidden::make('id'), // 👈 Hides the ID input
+        Forms\Components\Hidden::make('tenant_id'), // 👈 Hides the ID input
     ]);
 }
 
