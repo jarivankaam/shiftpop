@@ -18,4 +18,9 @@ class Tenant extends Model
             }
         });
     }
+
+      public function domains()
+    {
+        return $this->hasMany(\Stancl\Tenancy\Database\Models\Domain::class);
+    }
 }
