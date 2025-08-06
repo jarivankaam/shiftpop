@@ -26,7 +26,8 @@ protected static ?string $pluralLabel = 'Tenants';
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('slug')->label('Tenant ID')->rules(['not_in:0', 'alpha_dash', 'min:3']),
+            Forms\Components\TextInput::make('slug')->label('Tenant slug')->rules(['not_in:0', 'alpha_dash', 'min:3']),
+            Forms\Components\TextInput::make('id')->required()->label('Tenant ID')->rules(['not_in:0', 'alpha_dash', 'min:3']),
         ]);
     }
 
