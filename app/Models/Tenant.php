@@ -10,15 +10,6 @@ class Tenant extends BaseTenant
     protected $keyType = 'string';
     protected $fillable = ['slug'];
 
-    protected static function booted(): void
-    {
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) Str::uuid();
-            }
-        });
-    }
-
       public function domains()
     {
         return $this->hasMany(\Stancl\Tenancy\Database\Models\Domain::class);

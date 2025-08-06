@@ -7,10 +7,19 @@ use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Artisan;
 
+    use Illuminate\Support\Str;
 
 class CreateTenant extends CreateRecord
 {
     protected static string $resource = TenantResource::class;
+
+
+protected function mutateFormDataBeforeCreate(array $data): array
+{
+    $data['id'] = (string) Str::uuid(); // 👈 Generate UUID before creation
+    return $data;
+}
+
        protected function afterCreate(): void
     {
        /** @var Tenant $tenant */
