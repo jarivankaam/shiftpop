@@ -14,7 +14,7 @@ class CreateTenant extends CreateRecord
        protected function afterCreate(): void
     {
        /** @var Tenant $tenant */
-        $tenant = $this->record; // ✅ This is the tenant that was just created
+        $tenant = $this->data; // ✅ This is the tenant that was just created
 
 
         dd($tenant);
