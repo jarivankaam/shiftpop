@@ -6,6 +6,7 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Illuminate\Support\Str;
 class Tenant extends BaseTenant
 {
+       use HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
     protected $fillable = ['tenant_id','slug', 'id'];
