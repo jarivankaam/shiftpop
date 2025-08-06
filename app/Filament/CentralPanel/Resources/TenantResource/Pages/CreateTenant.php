@@ -11,19 +11,18 @@ use Illuminate\Support\Facades\Artisan;
 class CreateTenant extends CreateRecord
 {
     protected static string $resource = TenantResource::class;
-    protected function afterCreate(): void
+       protected function afterCreate(): void
     {
-         /** @var Tenant $tenant */
-        $tenant = $this->record;
+        $tenant = $this->record; // ✅ this is already saved and has a valid ID
 
-        // 🧠 Add domain using the slug
+        // ✅ Now it's safe to attach a domain
         $tenant->domains()->create([
-            'domain' => "{$tenant->id}.shiftpop.test", // or use a slug field if you have one
+            'domain' => "{$tenant->id}.shiftpop.test",
         ]);
-       $tenant->run(function () {
-            Artisan::call('tenants:migrate', [
-                '--tenants' => [$this->record->id],
-            ]);
-    });
+
+        // Optionally run tenant migrations
+        $tenant->run(function () {
+            Artisan::call('tenants:migrate', ['--force' => true]);
+        });
     }
 }
