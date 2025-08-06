@@ -3,7 +3,7 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
-
+use Illuminate\Support\Str;
 class Tenant extends Model
 {
     public $incrementing = false;
