@@ -36,7 +36,7 @@ protected static ?string $pluralLabel = 'Tenants';
             Tables\Columns\TextColumn::make('id'),
             Tables\Columns\TextColumn::make('domains.domain')->label('Domain'),
 
-        ])            ->actions([
+        ])->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
