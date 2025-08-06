@@ -103,6 +103,12 @@ class TenancyServiceProvider extends ServiceProvider
         $this->mapRoutes();
 
         $this->makeTenancyMiddlewareHighestPriority();
+
+        \Event::listen(CreatingTenant::class, function (CreatingTenant $event) {
+        if (empty($event->tenant->id)) {
+            $event->tenant->id = (string) Str::uuid();
+        }
+    });
     }
 
     protected function bootEvents()
