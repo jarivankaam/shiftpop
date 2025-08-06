@@ -27,7 +27,7 @@ protected function mutateFormDataBeforeCreate(array $data): array
        /** @var Tenant $tenant */
         $tenant = $this->record; // ✅ This is the tenant that was just created
         // Create domain (use real domain!)
-         dd($tenant);
+        dd($data);
         $tenant->domains()->create([
             'tenant_id' => $tenant->id,
             'domain' => "{$tenant->slug}.shiftpop.eu", // ✅ Replace "shi" with full domain
