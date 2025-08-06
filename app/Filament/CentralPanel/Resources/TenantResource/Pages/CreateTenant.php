@@ -24,7 +24,7 @@ protected function mutateFormDataBeforeCreate(array $data): array
 
        protected function afterCreate(): void
     {
-        dd($data);
+        // dd($data);
        /** @var Tenant $tenant */
         $tenant = $this->record; // ✅ This is the tenant that was just created
         // Create domain (use real domain!)
