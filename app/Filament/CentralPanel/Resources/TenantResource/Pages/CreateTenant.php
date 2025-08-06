@@ -13,20 +13,16 @@ class CreateTenant extends CreateRecord
     protected static string $resource = TenantResource::class;
        protected function afterCreate(): void
     {
-        $tenant = $this->record; // ✅ this is already saved and has a valid ID
+       /** @var Tenant $tenant */
+        $tenant = $this->record; // ✅ This is the tenant that was just created
 
-        // ✅ Now it's safe to attach a domain
-      $tenant = Tenant::create([
-    'id' => $tenant->id, // or use UUIDs
-]);
+        // Create domain (use real domain!)
+        $tenant->domains()->create([
+            'domain' => "{$tenant->id}.shiftpop.eu", // ✅ Replace "shi" with full domain
+        ]);
 
-$tenant->domains()->create([
-    'domain' => "{$tenant->id}.shi",
-]);
-
-        // Optionally run tenant migrations
+        // Run tenant migrations
         $tenant->run(function () {
             Artisan::call('tenants:migrate', ['--force' => true]);
         });
-    }
 }
