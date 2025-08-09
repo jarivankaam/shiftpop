@@ -13,7 +13,7 @@
             <h1 class="text-3xl md:text-5xl font-bold tracking-tight">ShiftPop – de eenvoudige plannings tool voor kleine bedrijven</h1>
             <p class="mt-4 text-white/90 md:text-lg max-w-2xl">Plan diensten in minuten, beheer beschikbaarheid, en houd iedereen op de hoogte. Minder chaos, meer overzicht.</p>
             <div class="mt-6 flex flex-wrap gap-3">
-                <a href="/register" class="px-5 py-3 rounded-xl bg-white text-blue-700 font-semibold hover:bg-white/90 transition">Start gratis</a>
+                <a href="mailto:jari@jarivankaam.nl" class="px-5 py-3 rounded-xl bg-white text-blue-700 font-semibold hover:bg-white/90 transition">Start gratis</a>
                 <a href="#features" class="px-5 py-3 rounded-xl bg-blue-800/30 ring-1 ring-white/30 hover:bg-blue-800/40 transition">Bekijk functies</a>
             </div>
         </section>
@@ -61,7 +61,7 @@
             <h3 class="text-lg md:text-xl font-bold">Klaar met spreadsheets?</h3>
             <p class="mt-2 text-sm text-gray-600">Probeer ShiftPop gratis en plan je volgende week in een paar klikken.</p>
             <div class="mt-5">
-                <a href="/register" class="px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700">Aan de slag</a>
+                <a href="mailto:jari@jarivankaam.nl" class="px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700">Aan de slag</a>
             </div>
         </section>
     </main>
