@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Password;
 use App\Filament\Dev\Resources\UserResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Notifications\Notification;
 
 class CreateUser extends CreateRecord
 {
