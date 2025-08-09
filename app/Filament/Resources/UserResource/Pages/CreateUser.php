@@ -15,14 +15,19 @@ class CreateUser extends CreateRecord
     {
         $user = $this->record;
 
-        // Send reset link email
         $status = Password::sendResetLink(['email' => $user->email]);
 
-        // (Optional) show a Filament toast about result
-        if ($status !== Password::RESET_LINK_SENT) {
-            $this->notify('danger', __($status));
+        if ($status === Password::RESET_LINK_SENT) {
+            Notification::make()
+                ->title('Password setup email sent.')
+                ->success()
+                ->send();
         } else {
-            $this->notify('success', 'Password setup email sent.');
+            Notification::make()
+                ->title(__('Could not send reset email'))
+                ->body(__($status))
+                ->danger()
+                ->send();
         }
     }
 }
