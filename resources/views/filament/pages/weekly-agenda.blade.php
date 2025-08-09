@@ -1,22 +1,22 @@
 <x-filament::page>
     @php
-        use Carbon\Carbon;
-
         $currentWeek = (int) request()->query('week', 0);
         $view = request()->query('view', 'week'); // 'week' | 'agenda'
 
-        $weekStart = Carbon::now()->startOfWeek()->addWeeks($currentWeek);
-        $weekEnd   = Carbon::now()->endOfWeek()->addWeeks($currentWeek);
+        $weekStart = \Carbon\Carbon::now()->startOfWeek()->addWeeks($currentWeek);
+        $weekEnd   = \Carbon\Carbon::now()->endOfWeek()->addWeeks($currentWeek);
 
-        // ---- NIEUW: bouw agenda-items incl. Ziek/Vrij ----
+        // Bouw agenda-items incl. Ziek/Vrij als pseudo-events
         $flat = collect();
         $i = 0;
+
         foreach ($agenda as $dayLabel => $data) {
             $dateObj   = $weekStart->copy()->addDays($i);
             $dateStr   = $dateObj->toDateString();
 
             $isSick    = $data['is_sick'] ?? false;
             $isDayOff  = $data['is_day_off'] ?? false;
+            /** @var \Illuminate\Support\Collection $shifts */
             $shifts    = ($data['shifts'] ?? collect()) ?: collect();
 
             if ($isSick) {
@@ -29,7 +29,7 @@
                     'title'     => 'Ziek',
                     'start'     => null,
                     'end'       => null,
-                    'start_at'  => $dateObj->startOfDay(),
+                    'start_at'  => $dateObj->copy()->startOfDay(),
                 ]);
             } elseif ($isDayOff) {
                 // Volledige dag vrij
@@ -41,12 +41,14 @@
                     'title'     => 'Vrij',
                     'start'     => null,
                     'end'       => null,
-                    'start_at'  => $dateObj->startOfDay(),
+                    'start_at'  => $dateObj->copy()->startOfDay(),
                 ]);
-            } elseif ($shifts->isNotEmpty()) {
+            }
+
+            if ($shifts->isNotEmpty()) {
                 foreach ($shifts as $shift) {
-                    $start = Carbon::parse($shift->start_time);
-                    $end   = Carbon::parse($shift->end_time);
+                    $start = \Carbon\Carbon::parse($shift->start_time);
+                    $end   = \Carbon\Carbon::parse($shift->end_time);
                     $flat->push([
                         'type'      => 'shift',
                         'dayLabel'  => $dayLabel,
@@ -58,8 +60,6 @@
                         'start_at'  => $start,
                     ]);
                 }
-            } else {
-                // Geen diensten, geen vrij/ziek → niets tonen (of maak er een "Geen diensten" event van als je wilt)
             }
 
             $i++;
@@ -98,7 +98,7 @@
         </div>
 
         @if ($view === 'agenda')
-            {{-- AGENDA VIEW met Vrij/Ziek --}}
+            {{-- AGENDA VIEW met Vrij/Ziek/Diensten --}}
             @if ($agendaItems->isEmpty())
                 <div class="text-center text-gray-500 italic">Geen items in deze periode.</div>
             @else
@@ -124,16 +124,15 @@
 
                             <ul class="mt-2 divide-y">
                                 @foreach ($items as $item)
+                                    @php
+                                        $dotClass = 'bg-gray-400';
+                                        if ($item['type'] === 'off')  $dotClass = 'bg-emerald-500';
+                                        if ($item['type'] === 'sick') $dotClass = 'bg-rose-500';
+                                    @endphp
+
                                     <li class="py-2 flex items-center justify-between">
                                         <div class="flex items-center gap-2">
-                                            @php
-                                                $dot = match($item['type']) {
-                                                    'off'   => 'bg-emerald-500',
-                                                    'sick'  => 'bg-rose-500',
-                                                    default => 'bg-gray-400',
-                                                };
-                                            @endphp
-                                            <span class="w-2.5 h-2.5 rounded-full {{ $dot }} inline-block"></span>
+                                            <span class="w-2.5 h-2.5 rounded-full {{ $dotClass }} inline-block"></span>
                                             <div>
                                                 <div class="font-medium">
                                                     {{ $item['title'] }}
@@ -145,9 +144,7 @@
                                         <div class="font-mono text-sm text-right">
                                             @if ($item['type'] === 'shift')
                                                 {{ $item['start'] }} → {{ $item['end'] }}
-                                            @elseif ($item['type'] === 'off')
-                                                Hele dag
-                                            @elseif ($item['type'] === 'sick')
+                                            @else
                                                 Hele dag
                                             @endif
                                         </div>
@@ -159,13 +156,14 @@
                 </div>
             @endif
         @else
-            {{-- WEEK VIEW (ongewijzigd) --}}
+            {{-- WEEK VIEW (oorspronkelijke weergave) --}}
             <div class="space-y-6">
                 @foreach ($agenda as $day => $data)
                     @php
-                        $shifts = $data['shifts'];
-                        $isDayOff = $data['is_day_off'];
-                        $isSick = $data['is_sick'];
+                        /** @var \Illuminate\Support\Collection $shifts */
+                        $shifts = $data['shifts'] ?? collect();
+                        $isDayOff = $data['is_day_off'] ?? false;
+                        $isSick = $data['is_sick'] ?? false;
                     @endphp
 
                     <div class="border p-4 rounded-md bg-white dark:bg-gray-800">
