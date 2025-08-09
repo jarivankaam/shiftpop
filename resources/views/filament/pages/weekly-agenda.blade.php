@@ -1,15 +1,36 @@
 <x-filament::page>
     @php
-        // ---- Query params / view state ----
-        $currentWeek  = (int) request()->query('week', 0);
-        $currentMonth = (int) request()->query('month', 0);
+        // -----------------------------
+        // Query state
+        // -----------------------------
+        $currentWeek = (int) request()->query('week', 0);
         $view = request()->query('view', 'week'); // 'week' | 'agenda' | 'calendar'
 
-        // ---- Week range (used by Week/Agenda) ----
+        // Week boundaries (voor week/agenda)
         $weekStart = \Carbon\Carbon::now()->startOfWeek()->addWeeks($currentWeek);
         $weekEnd   = \Carbon\Carbon::now()->endOfWeek()->addWeeks($currentWeek);
 
-        // ---- Build Agenda items (incl. Vrij/Ziek) for the selected week ----
+        // Maand parsing (voor calendar)
+        $monthParam = request()->query('month'); // 'YYYY-MM' of null
+        if ($monthParam) {
+            try {
+                $monthStart = \Carbon\Carbon::createFromFormat('Y-m', $monthParam)->startOfMonth();
+            } catch (\Exception $e) {
+                $monthStart = \Carbon\Carbon::now()->startOfMonth();
+            }
+        } else {
+            // Als geen ?month is meegegeven, baseer maand op weekStart
+            $monthStart = $weekStart->copy()->startOfMonth();
+        }
+        $monthEnd = $monthStart->copy()->endOfMonth();
+
+        // Grid-interval voor de kalender (start maandag, eind zondag)
+        $calendarStart = $monthStart->copy()->startOfWeek();
+        $calendarEnd   = $monthEnd->copy()->endOfWeek();
+
+        // -----------------------------
+        // Agenda/Week -> vlakke items incl. Vrij/Ziek (zoals eerder)
+        // -----------------------------
         $flat = collect();
         $i = 0;
         foreach ($agenda as $dayLabel => $data) {
@@ -66,47 +87,47 @@
         }
         $agendaItems = $flat->sortBy('start_at')->groupBy('date');
 
-        // ---- Month grid (for Calendar view) ----
-        // We use an optional $calendar array passed from the controller: ['Y-m-d' => ['is_sick'=>..., 'is_day_off'=>..., 'shifts'=>Collection]]
-        $monthAnchor = \Carbon\Carbon::now()->startOfMonth()->addMonths($currentMonth);
-        $monthLabel  = $monthAnchor->isoFormat('MMMM YYYY');
+        // -----------------------------
+        // Calendar (maand) data
+        // -----------------------------
+        // Verwacht idealiter: $eventsByDate (array/collectie) -> ['YYYY-MM-DD' => [events...]]
+        // Als je controller dit (nog) niet levert, vul in elk geval de huidige week in de juiste datums:
+        /** @var \Illuminate\Support\Collection $eventsByDate */
+        $eventsByDate = collect();
 
-        $gridStart = $monthAnchor->copy()->startOfMonth()->startOfWeek(\Carbon\Carbon::MONDAY);
-        $gridEnd   = $monthAnchor->copy()->endOfMonth()->endOfWeek(\Carbon\Carbon::SUNDAY);
-        $days = [];
-        $cursor = $gridStart->copy();
-        while ($cursor->lte($gridEnd)) {
-            $days[] = $cursor->copy();
-            $cursor->addDay();
-        }
-
-        // Ensure we always render 6 rows (42 cells) for a stable grid
-        if (count($days) < 42) {
-            $extra = 42 - count($days);
-            for ($k = 0; $k < $extra; $k++) {
-                $days[] = $cursor->copy();
-                $cursor->addDay();
+        if (isset($calendarEventsByDate) && $calendarEventsByDate) {
+            // Als je in je controller $calendarEventsByDate meegeeft (zelfde structuur als hieronder)
+            $eventsByDate = collect($calendarEventsByDate);
+        } else {
+            // fallback: gebruik de reeds berekende $flat van de huidige week
+            foreach ($flat as $item) {
+                $eventsByDate->push($item);
             }
+            $eventsByDate = $eventsByDate->groupBy('date');
         }
 
-        // Events map for month view (safe default when $calendar is absent)
-        /** @var array<string, array{is_sick?:bool,is_day_off?:bool,shifts?:\Illuminate\Support\Collection}> $calendar */
-        $calendar = isset($calendar) && is_array($calendar) ? $calendar : [];
+        // Maak een periode over alle dagen in de kalender-grid
+        $period = \Carbon\CarbonPeriod::create($calendarStart, '1 day', $calendarEnd);
     @endphp
 
     <div class="space-y-6">
-        {{-- Navigation --}}
+        {{-- Navigatie --}}
         <div class="flex flex-wrap justify-between items-center mb-6 gap-2">
-            {{-- Left: prev/this/next depending on view --}}
+            {{-- Links: Prev/Today/Next --}}
             <div class="flex gap-2">
                 @if ($view === 'calendar')
-                    <a href="?month={{ $currentMonth - 1 }}&view=calendar"
+                    @php
+                        $prevMonth = $monthStart->copy()->subMonth()->format('Y-m');
+                        $nextMonth = $monthStart->copy()->addMonth()->format('Y-m');
+                        $thisMonth = \Carbon\Carbon::now()->format('Y-m');
+                    @endphp
+                    <a href="?view=calendar&month={{ $prevMonth }}"
                        class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 transition">← Vorige maand</a>
 
-                    <a href="?month=0&view=calendar"
+                    <a href="?view=calendar&month={{ $thisMonth }}"
                        class="px-4 py-2 bg-blue-100 text-blue-700 font-semibold rounded hover:bg-blue-200 transition">📅 Deze maand</a>
 
-                    <a href="?month={{ $currentMonth + 1 }}&view=calendar"
+                    <a href="?view=calendar&month={{ $nextMonth }}"
                        class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 transition">Volgende maand →</a>
                 @else
                     <a href="?week={{ $currentWeek - 1 }}&view={{ $view }}"
@@ -120,113 +141,98 @@
                 @endif
             </div>
 
-            {{-- Right: view toggles --}}
+            {{-- Rechts: View-toggle --}}
             <div class="flex gap-1">
                 <a href="?week={{ $currentWeek }}&view=week"
                    class="px-3 py-2 rounded transition {{ $view === 'week' ? 'bg-primary-600 text-white' : 'bg-gray-100 hover:bg-gray-200' }}">
-                    Week
+                    Weekoverzicht
                 </a>
                 <a href="?week={{ $currentWeek }}&view=agenda"
                    class="px-3 py-2 rounded transition {{ $view === 'agenda' ? 'bg-primary-600 text-white' : 'bg-gray-100 hover:bg-gray-200' }}">
                     Agenda
                 </a>
-                <a href="?month={{ $currentMonth }}&view=calendar"
+                <a href="?view=calendar&month={{ $monthStart->format('Y-m') }}"
                    class="px-3 py-2 rounded transition {{ $view === 'calendar' ? 'bg-primary-600 text-white' : 'bg-gray-100 hover:bg-gray-200' }}">
-                    Kalender
+                    Calendar
                 </a>
             </div>
         </div>
 
-        {{-- Header helper text --}}
-        @if ($view === 'calendar')
-            <div class="text-center text-sm text-gray-600 mb-4">
-                {{ $monthLabel }}
-            </div>
-        @else
-            <div class="text-center text-sm text-gray-600 mb-4">
+        {{-- Onderkop: periode --}}
+        <div class="text-center text-sm text-gray-600 mb-4">
+            @if ($view === 'calendar')
+                Maand: {{ $monthStart->isoFormat('MMMM YYYY') }}
+            @else
                 Week van {{ $weekStart->format('d M Y') }} tot {{ $weekEnd->format('d M Y') }}
-            </div>
-        @endif
+            @endif
+        </div>
 
-        {{-- CALENDAR VIEW --}}
+        {{-- CALENDAR (maand) VIEW --}}
         @if ($view === 'calendar')
-            <div class="rounded-md bg-white dark:bg-gray-800 p-4">
-                {{-- Weekday headers (Mon-Sun) --}}
-                <div class="grid grid-cols-7 text-xs font-medium text-gray-500 mb-2">
-                    <div class="py-2 text-center">Ma</div>
-                    <div class="py-2 text-center">Di</div>
-                    <div class="py-2 text-center">Wo</div>
-                    <div class="py-2 text-center">Do</div>
-                    <div class="py-2 text-center">Vr</div>
-                    <div class="py-2 text-center">Za</div>
-                    <div class="py-2 text-center">Zo</div>
-                </div>
-
-                <div class="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 rounded">
-                    @foreach ($days as $d)
-                        @php
-                            $dateKey = $d->toDateString();
-                            $inMonth = $d->isSameMonth($monthAnchor);
-                            $cellData = $calendar[$dateKey] ?? ['is_sick' => false, 'is_day_off' => false, 'shifts' => collect()];
-                            $isSick = $cellData['is_sick'] ?? false;
-                            $isOff  = $cellData['is_day_off'] ?? false;
-                            /** @var \Illuminate\Support\Collection $cellShifts */
-                            $cellShifts = ($cellData['shifts'] ?? collect()) ?: collect();
-
-                            $maxLines = 3; // show at most 3 lines per cell
-                            $extraCount = max(0, $cellShifts->count() - $maxLines);
-                        @endphp
-
-                        <div class="bg-white dark:bg-gray-900 min-h-[110px] p-2 flex flex-col {{ $inMonth ? '' : 'opacity-50' }}">
-                            <div class="flex items-center justify-between mb-1">
-                                <div class="text-xs font-semibold">{{ $d->day }}</div>
-                                {{-- indicators --}}
-                                <div class="flex gap-1">
-                                    @if ($isOff)
-                                        <span title="Vrij" class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                                    @endif
-                                    @if ($isSick)
-                                        <span title="Ziek" class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
-                                    @endif
-                                </div>
-                            </div>
-
-                            {{-- Shifts list --}}
-                            <div class="space-y-0.5">
-                                @foreach ($cellShifts->take($maxLines) as $shift)
-                                    @php
-                                        $s = \Carbon\Carbon::parse($shift->start_time);
-                                        $e = \Carbon\Carbon::parse($shift->end_time);
-                                    @endphp
-                                    <div class="rounded px-1 py-0.5 text-[11px] bg-gray-100 dark:bg-gray-800">
-                                        <span class="font-mono">{{ $s->format('H:i') }}–{{ $e->format('H:i') }}</span>
-                                        <span class="ml-1">{{ $shift->title ?? 'Dienst' }}</span>
-                                    </div>
-                                @endforeach
-
-                                @if ($extraCount > 0)
-                                    <div class="text-[11px] text-gray-500">+{{ $extraCount }} meer…</div>
-                                @endif
-
-                                @if ($cellShifts->isEmpty() && !$isOff && !$isSick)
-                                    <div class="text-[11px] text-gray-400">—</div>
-                                @endif
-                            </div>
-                        </div>
+            <div class="bg-white dark:bg-gray-800 rounded-md p-4">
+                {{-- Weekdag labels --}}
+                <div class="grid grid-cols-7 text-xs font-semibold text-gray-500 mb-2">
+                    @foreach (['Ma','Di','Wo','Do','Vr','Za','Zo'] as $wd)
+                        <div class="px-2 py-1">{{ $wd }}</div>
                     @endforeach
                 </div>
 
-                {{-- Legend --}}
-                <div class="flex gap-3 text-xs text-gray-600 justify-end mt-3">
-                    <span class="inline-flex items-center gap-1">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Vrij
-                    </span>
-                    <span class="inline-flex items-center gap-1">
-                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Ziek
-                    </span>
-                    <span class="inline-flex items-center gap-1">
-                        <span class="w-3 h-3 rounded bg-gray-200 border border-gray-300 inline-block"></span> Dienst
-                    </span>
+                {{-- Maand-grid: chunk per 7 dagen --}}
+                <div class="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 rounded-md overflow-hidden">
+                    @php
+                        $days = collect($period->toArray());
+                        $rows = $days->chunk(7);
+                    @endphp
+
+                    @foreach ($rows as $weekRow)
+                        @foreach ($weekRow as $day)
+                            @php
+                                /** @var \Carbon\Carbon $day */
+                                $inMonth = $day->between($monthStart, $monthEnd);
+                                $dayKey  = $day->toDateString();
+                                $items   = $eventsByDate->get($dayKey, collect());
+                            @endphp
+
+                            <div class="bg-white dark:bg-gray-900 min-h-[110px] p-2 flex flex-col">
+                                <div class="flex items-center justify-between">
+                                    <div class="text-xs {{ $inMonth ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400' }}">
+                                        {{ $day->format('j') }}
+                                    </div>
+                                    {{-- vandaag badge --}}
+                                    @if ($day->isToday())
+                                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">vandaag</span>
+                                    @endif
+                                </div>
+
+                                {{-- events --}}
+                                <div class="mt-1 space-y-1">
+                                    @foreach ($items as $item)
+                                        @php
+                                            $dotClass = 'bg-gray-400';
+                                            $label = $item['title'] ?? 'Item';
+                                            if (($item['type'] ?? null) === 'off')  { $dotClass = 'bg-emerald-500'; $label = 'Vrij'; }
+                                            if (($item['type'] ?? null) === 'sick') { $dotClass = 'bg-rose-500';    $label = 'Ziek'; }
+                                        @endphp
+                                        <div class="flex items-center gap-2 text-xs leading-snug">
+                                            <span class="w-2 h-2 rounded-full {{ $dotClass }} shrink-0"></span>
+                                            <span class="truncate">
+                                                @if (($item['type'] ?? null) === 'shift' && isset($item['start'], $item['end']))
+                                                    <span class="font-mono">{{ $item['start'] }}–{{ $item['end'] }}</span>
+                                                    <span class="text-gray-600">·</span>
+                                                @endif
+                                                {{ $label }}
+                                            </span>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                {{-- hint voor lege cellen buiten maand --}}
+                                @if (!$inMonth && $items->isEmpty())
+                                    <div class="mt-auto text-[10px] text-gray-400">—</div>
+                                @endif
+                            </div>
+                        @endforeach
+                    @endforeach
                 </div>
             </div>
 
@@ -235,6 +241,7 @@
             @if ($agendaItems->isEmpty())
                 <div class="text-center text-gray-500 italic">Geen items in deze periode.</div>
             @else
+                {{-- Legend --}}
                 <div class="flex gap-3 text-xs text-gray-600 justify-end">
                     <span class="inline-flex items-center gap-1">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Vrij
@@ -270,6 +277,7 @@
                                                 <div class="text-xs text-gray-500">{{ $item['dayLabel'] }}</div>
                                             </div>
                                         </div>
+
                                         <div class="font-mono text-sm text-right">
                                             @if ($item['type'] === 'shift')
                                                 {{ $item['start'] }} → {{ $item['end'] }}
@@ -284,8 +292,9 @@
                     @endforeach
                 </div>
             @endif
+
+        {{-- WEEK VIEW (origineel) --}}
         @else
-            {{-- WEEK VIEW (oorspronkelijke weergave) --}}
             <div class="space-y-6">
                 @foreach ($agenda as $day => $data)
                     @php
@@ -323,4 +332,22 @@
             </div>
         @endif
     </div>
+
+    {{-- Tips voor controller integratie (optioneel laten staan of verwijderen) --}}
+    {{--
+        In je controller kun je voor de kalender maandbreed data vullen:
+        $month = request('month', now()->format('Y-m'));
+        $monthStart = \Carbon\Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+        $monthEnd   = $monthStart->copy()->endOfMonth();
+
+        // Bouw $calendarEventsByDate = [
+        //   'YYYY-MM-DD' => [
+        //       ['type' => 'shift', 'title' => 'Dienst', 'start' => '09:00', 'end' => '17:00'],
+        //       ['type' => 'off', 'title' => 'Vrij'],
+        //       ['type' => 'sick', 'title' => 'Ziek'],
+        //   ],
+        //   ...
+        // ];
+        // return view(..., compact('agenda', 'calendarEventsByDate'));
+    --}}
 </x-filament::page>
