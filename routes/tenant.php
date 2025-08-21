@@ -24,6 +24,11 @@ Route::middleware([
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
     Route::get('/', function () {
-        return 'This is your multi-tenant application. The id of the current tenant is ' . tenant('id');
-    });
+    // If you want logged-in users to go elsewhere:
+    // return auth()->check()
+    //     ? redirect()->route('dashboard') // or your tenant dashboard route name
+    //     : redirect('/user/login');
+
+    return redirect('/user/login'); // simple unconditional redirect
+});
 });
